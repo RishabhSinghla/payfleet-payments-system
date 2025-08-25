@@ -1,0 +1,48 @@
+# PayFleet Application Configuration
+# This file configures our entire Spring Boot application
+
+# Server Configuration
+server:
+  port: 8080  # Standard HTTP port
+  servlet:
+    context-path: /payfleet  # Base path: http://localhost:8080/payfleet
+
+# Application Information
+spring:
+  application:
+    name: payfleet-payments-system
+
+  # Database Configuration
+  datasource:
+    url: jdbc:postgresql://localhost:5432/payfleet
+    username: payfleet_user
+    password: payfleet_pass
+    driver-class-name: org.postgresql.Driver
+
+  # JPA/Hibernate Configuration
+  jpa:
+    hibernate:
+      ddl-auto: update  # Automatically creates/updates database tables
+    show-sql: true     # Shows SQL queries in console (for learning)
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true  # Pretty-print SQL queries
+
+# Logging Configuration - helps us debug issues
+logging:
+  level:
+    com.payfleet: DEBUG    # Detailed logs for our code
+    org.springframework.web: INFO
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+
+# Management Endpoints - health checks, metrics
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
