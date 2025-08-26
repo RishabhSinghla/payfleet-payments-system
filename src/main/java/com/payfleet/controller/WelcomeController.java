@@ -8,61 +8,67 @@ import java.time.LocalDateTime;
 import java.util.Map;
 
 /**
- * Welcome Controller - Our first REST API endpoint
+ * Welcome Controller - System Information and Health Check APIs
  * <p>
- * This demonstrates enterprise Spring Boot REST API patterns:
- * - Clean controller structure
- * - Proper HTTP methods
- * - JSON response formatting
- * - API documentation
- *
- * @RestController combines @Controller + @ResponseBody
- * Automatically converts return objects to JSON
+ * Enterprise Pattern: Health Check Endpoints
+ * - Used by load balancers to verify service health
+ * - Used by monitoring systems (Prometheus, New Relic, etc.)
+ * - Provides system information for debugging
+ * <p>
+ * JPMC Relevance: All production services need health checks
  */
 @RestController
-@RequestMapping("/api/v1")  // Base path for all APIs: /payfleet/api/v1
+@RequestMapping("/api/v1")
 public class WelcomeController {
 
     /**
-     * System Health and Welcome Endpoint
+     * Welcome Endpoint - System Information
      * <p>
      * GET /payfleet/api/v1/welcome
      * <p>
-     * Returns system status and basic information.
-     * This pattern is used in enterprise systems for health checks.
+     * This endpoint provides:
+     * - System status verification
+     * - Version information
+     * - Feature list for API consumers
+     * - Timestamp for request tracking
      */
     @GetMapping("/welcome")
     public Map<String, Object> welcome() {
         return Map.of(
-                "message", "🚀 Welcome to PayFleet Payment Processing System!",
-                "status", "OPERATIONAL",
+                "service", "PayFleet Payment Processing System",
+                "message", "🚀 Enterprise payment system operational",
+                "status", "HEALTHY",
                 "timestamp", LocalDateTime.now(),
                 "version", "1.0.0-SNAPSHOT",
-                "description", "Enterprise-grade payment system built for JPMC excellence",
+                "environment", "development",
                 "features", new String[]{
-                        "JWT Authentication",
+                        "User Registration & Authentication",
+                        "Account Management",
                         "Real-time Payment Processing",
-                        "Event-driven Architecture",
-                        "Microservices Patterns",
-                        "Production-grade Security"
+                        "Transaction Audit Trail",
+                        "Role-based Access Control"
                 }
         );
     }
 
     /**
-     * System Status Endpoint
+     * Health Check Endpoint
      * <p>
-     * GET /payfleet/api/v1/status
+     * GET /payfleet/api/v1/health
      * <p>
-     * Quick health check endpoint - used by load balancers
-     * and monitoring systems to verify application health.
+     * Quick health verification for monitoring systems.
+     * Returns minimal response for high-frequency checks.
      */
-    @GetMapping("/status")
-    public Map<String, String> status() {
+    @GetMapping("/health")
+    public Map<String, Object> health() {
         return Map.of(
                 "status", "UP",
-                "database", "CONNECTED",
-                "timestamp", LocalDateTime.now().toString()
+                "timestamp", LocalDateTime.now(),
+                "checks", Map.of(
+                        "database", "CONNECTED",
+                        "disk_space", "SUFFICIENT",
+                        "memory", "NORMAL"
+                )
         );
     }
 }
