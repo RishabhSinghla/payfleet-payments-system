@@ -3,6 +3,7 @@ package com.payfleet.service;
 import com.payfleet.dto.UserRegistrationRequest;
 import com.payfleet.dto.UserResponse;
 import com.payfleet.model.User;
+import com.payfleet.model.UserStatus;
 import com.payfleet.repository.UserRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -121,4 +122,35 @@ public class UserService {
     public boolean verifyPassword(String rawPassword, String encodedPassword) {
         return passwordEncoder.matches(rawPassword, encodedPassword);
     }
+
+    /**
+     * Authenticate user with username and password
+     *
+     * @param username    Username or email for login
+     * @param rawPassword Plain text password from login form
+     * @return Optional<User> if authentication successful, empty if failed
+     */
+    public Optional<User> authenticateUser(String username, String rawPassword) {
+        // Try to find user by username first, then by email
+        Optional<User> userOptional = userRepository.findByUsername(username);
+        if (userOptional.isEmpty()) {
+            userOptional = userRepository.findByEmail(username);
+        }
+
+        // If user found and password matches, return user
+        if (userOptional.isPresent()) {
+            User user = userOptional.get();
+            if (passwordEncoder.matches(rawPassword, user.getPassword())) {
+                // Check if user account is active
+                if (user.getStatus() == UserStatus.ACTIVE) {
+                    return Optional.of(user);
+                } else {
+                    throw new IllegalStateException("User account is " + user.getStatus().name().toLowerCase());
+                }
+            }
+        }
+
+        return Optional.empty(); // Authentication failed
+    }
+
 }
