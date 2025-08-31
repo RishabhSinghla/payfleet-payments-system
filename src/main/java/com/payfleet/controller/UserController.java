@@ -1,16 +1,23 @@
 package com.payfleet.controller;
 
+import com.payfleet.dto.UserProfileUpdateRequest;
 import com.payfleet.dto.UserRegistrationRequest;
 import com.payfleet.dto.UserResponse;
+import com.payfleet.model.User;
 import com.payfleet.service.UserService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * UserController - REST API Layer for User Operations
@@ -122,4 +129,123 @@ public class UserController {
                 "timestamp", LocalDateTime.now()
         ));
     }
+
+    /**
+     * Get Current User Profile - Protected Endpoint
+     * <p>
+     * GET /api/v1/users/profile
+     * <p>
+     * Returns current authenticated user's profile information
+     * Requires valid JWT token in Authorization header
+     */
+    @GetMapping("/profile")
+    public ResponseEntity<?> getCurrentUserProfile(Authentication authentication) {
+        try {
+            String username = authentication.getName();
+            Optional<User> userOptional = userService.findByUsername(username);
+
+            if (userOptional.isPresent()) {
+                UserResponse userResponse = new UserResponse(userOptional.get());
+                return ResponseEntity.ok(Map.of(
+                        "success", true,
+                        "message", "Profile retrieved successfully",
+                        "data", userResponse,
+                        "timestamp", LocalDateTime.now()
+                ));
+            } else {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
+                        "success", false,
+                        "message", "User not found",
+                        "timestamp", LocalDateTime.now()
+                ));
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
+                    "success", false,
+                    "message", "Failed to retrieve profile",
+                    "timestamp", LocalDateTime.now()
+            ));
+        }
+    }
+
+    /**
+     * Update User Profile - Protected Endpoint
+     * <p>
+     * PUT /api/v1/users/profile
+     * <p>
+     * Updates current authenticated user's profile information
+     */
+    @PutMapping("/profile")
+    public ResponseEntity<?> updateUserProfile(@RequestBody @Valid UserProfileUpdateRequest request,
+                                               Authentication authentication) {
+        try {
+            String username = authentication.getName();
+            Optional<User> userOptional = userService.findByUsername(username);
+
+            if (userOptional.isPresent()) {
+                User user = userOptional.get();
+
+                // Update allowed fields
+                user.setFirstName(request.getFirstName());
+                user.setLastName(request.getLastName());
+                user.setEmail(request.getEmail());
+
+                // Save updated user
+                User updatedUser = userService.updateUser(user);
+                UserResponse userResponse = new UserResponse(updatedUser);
+
+                return ResponseEntity.ok(Map.of(
+                        "success", true,
+                        "message", "Profile updated successfully",
+                        "data", userResponse,
+                        "timestamp", LocalDateTime.now()
+                ));
+            } else {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
+                        "success", false,
+                        "message", "User not found",
+                        "timestamp", LocalDateTime.now()
+                ));
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
+                    "success", false,
+                    "message", "Failed to update profile",
+                    "timestamp", LocalDateTime.now()
+            ));
+        }
+    }
+
+    /**
+     * Admin Only - Get All Users
+     * <p>
+     * GET /api/v1/users/all
+     * <p>
+     * Returns all users (admin only endpoint)
+     */
+    @GetMapping("/all")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> getAllUsers(Authentication authentication) {
+        try {
+            List<User> users = userService.findAllUsers();
+            List<UserResponse> userResponses = users.stream()
+                    .map(UserResponse::new)
+                    .collect(Collectors.toList());
+
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "message", "Users retrieved successfully",
+                    "data", userResponses,
+                    "count", userResponses.size(),
+                    "timestamp", LocalDateTime.now()
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
+                    "success", false,
+                    "message", "Failed to retrieve users",
+                    "timestamp", LocalDateTime.now()
+            ));
+        }
+    }
+
 }

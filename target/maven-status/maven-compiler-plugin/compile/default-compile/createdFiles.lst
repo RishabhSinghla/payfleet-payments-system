@@ -6,6 +6,7 @@ com\payfleet\PayFleetApplication.class
 com\payfleet\controller\UserController.class
 com\payfleet\dto\UserRegistrationRequest.class
 com\payfleet\model\User.class
+com\payfleet\dto\UserProfileUpdateRequest.class
 com\payfleet\security\JwtUtil.class
 com\payfleet\controller\WelcomeController.class
 com\payfleet\service\UserService.class
@@ -13,3 +14,4 @@ com\payfleet\model\UserStatus.class
 com\payfleet\repository\UserRepository.class
 com\payfleet\dto\AuthResponse.class
 com\payfleet\dto\LoginRequest.class
+com\payfleet\security\JwtAuthenticationFilter.class

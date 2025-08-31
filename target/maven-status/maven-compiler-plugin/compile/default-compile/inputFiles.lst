@@ -1,4 +1,5 @@
 C:\Users\aashi\Downloads\payfleet-payments-system\src\main\java\com\payfleet\dto\UserRegistrationRequest.java
+C:\Users\aashi\Downloads\payfleet-payments-system\src\main\java\com\payfleet\security\JwtAuthenticationFilter.java
 C:\Users\aashi\Downloads\payfleet-payments-system\src\main\java\com\payfleet\PayFleetApplication.java
 C:\Users\aashi\Downloads\payfleet-payments-system\src\main\java\com\payfleet\controller\WelcomeController.java
 C:\Users\aashi\Downloads\payfleet-payments-system\src\main\java\com\payfleet\model\User.java
@@ -13,3 +14,4 @@ C:\Users\aashi\Downloads\payfleet-payments-system\src\main\java\com\payfleet\sec
 C:\Users\aashi\Downloads\payfleet-payments-system\src\main\java\com\payfleet\dto\LoginRequest.java
 C:\Users\aashi\Downloads\payfleet-payments-system\src\main\java\com\payfleet\model\UserStatus.java
 C:\Users\aashi\Downloads\payfleet-payments-system\src\main\java\com\payfleet\controller\UserController.java
+C:\Users\aashi\Downloads\payfleet-payments-system\src\main\java\com\payfleet\dto\UserProfileUpdateRequest.java

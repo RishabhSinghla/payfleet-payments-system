@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -152,5 +153,21 @@ public class UserService {
 
         return Optional.empty(); // Authentication failed
     }
+
+    /**
+     * Update existing user
+     */
+    @Transactional
+    public User updateUser(User user) {
+        return userRepository.save(user);
+    }
+
+    /**
+     * Find all users (admin function)
+     */
+    public List<User> findAllUsers() {
+        return userRepository.findAll();
+    }
+
 
 }
