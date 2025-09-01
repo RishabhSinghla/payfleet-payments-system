@@ -2,6 +2,8 @@ package com.payfleet.service;
 
 import com.payfleet.dto.AccountCreationRequest;
 import com.payfleet.dto.AccountResponse;
+import com.payfleet.exception.AccountNotFoundException;
+import com.payfleet.exception.InvalidPaymentException;
 import com.payfleet.model.Account;
 import com.payfleet.model.AccountStatus;
 import com.payfleet.model.User;
@@ -60,7 +62,7 @@ public class AccountService {
         // Find account owner
         Optional<User> ownerOptional = userService.findByUsername(ownerUsername);
         if (ownerOptional.isEmpty()) {
-            throw new IllegalArgumentException("Account owner not found: " + ownerUsername);
+            throw new InvalidPaymentException("Account owner not found: " + ownerUsername);
         }
 
         User owner = ownerOptional.get();
@@ -107,7 +109,7 @@ public class AccountService {
     public List<AccountResponse> getUserAccounts(String username) {
         Optional<User> userOptional = userService.findByUsername(username);
         if (userOptional.isEmpty()) {
-            throw new IllegalArgumentException("User not found: " + username);
+            throw new InvalidPaymentException("User not found: " + username);
         }
 
         List<Account> accounts = accountRepository.findByOwner(userOptional.get());
@@ -181,7 +183,7 @@ public class AccountService {
             account.setBalance(newBalance);
             accountRepository.save(account);
         } else {
-            throw new IllegalArgumentException("Account not found: " + accountNumber);
+            throw new AccountNotFoundException(accountNumber);
         }
     }
 
@@ -234,7 +236,7 @@ public class AccountService {
         Optional<Account> accountOptional = accountRepository.findById(accountId);
 
         if (accountOptional.isEmpty()) {
-            throw new IllegalArgumentException("Account not found");
+            throw new AccountNotFoundException("Account not found");
         }
 
         Account account = accountOptional.get();

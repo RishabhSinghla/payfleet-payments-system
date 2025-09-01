@@ -1,9 +1,6 @@
 package com.payfleet.dto;
 
-import jakarta.validation.constraints.DecimalMin;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.*;
 
 import java.math.BigDecimal;
 
@@ -15,20 +12,28 @@ import java.math.BigDecimal;
 public class PaymentInitiationRequest {
 
     @NotBlank(message = "Source account number is required")
+    @Pattern(regexp = "^ACC-\\d{8}-\\d{6}$",
+            message = "Invalid account number format. Expected: ACC-YYYYMMDD-XXXXXX")
     private String fromAccountNumber;
 
     @NotBlank(message = "Destination account number is required")
+    @Pattern(regexp = "^ACC-\\d{8}-\\d{6}$",
+            message = "Invalid account number format. Expected: ACC-YYYYMMDD-XXXXXX")
     private String toAccountNumber;
 
     @NotNull(message = "Payment amount is required")
     @DecimalMin(value = "0.01", message = "Payment amount must be at least 0.01")
+    @DecimalMax(value = "100000.00", message = "Payment amount cannot exceed 100,000.00")
+    @Digits(integer = 8, fraction = 2, message = "Payment amount must have at most 8 digits and 2 decimal places")
     private BigDecimal amount;
 
     @NotBlank(message = "Currency is required")
     @Size(min = 3, max = 3, message = "Currency must be exactly 3 characters")
     private String currency = "USD";
 
-    @Size(max = 500, message = "Description must not exceed 500 characters")
+    @Size(max = 500, message = "Description cannot exceed 500 characters")
+    @Pattern(regexp = "^[\\w\\s.,!?-]*$",
+            message = "Description contains invalid characters")
     private String description;
 
     @Size(max = 100, message = "Idempotency key must not exceed 100 characters")

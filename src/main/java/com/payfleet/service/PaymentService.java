@@ -2,6 +2,10 @@ package com.payfleet.service;
 
 import com.payfleet.dto.PaymentInitiationRequest;
 import com.payfleet.dto.PaymentResponse;
+import com.payfleet.exception.AccountNotFoundException;
+import com.payfleet.exception.DuplicatePaymentException;
+import com.payfleet.exception.InsufficientFundsException;
+import com.payfleet.exception.InvalidPaymentException;
 import com.payfleet.model.Account;
 import com.payfleet.model.Payment;
 import com.payfleet.model.PaymentStatus;
@@ -70,7 +74,7 @@ public class PaymentService {
         // Step 1: Validate initiator
         Optional<User> initiatorOptional = userService.findByUsername(initiatorUsername);
         if (initiatorOptional.isEmpty()) {
-            throw new IllegalArgumentException("Initiator user not found: " + initiatorUsername);
+            throw new InvalidPaymentException("Initiator user not found: " + initiatorUsername);
         }
         User initiator = initiatorOptional.get();
 
@@ -78,7 +82,10 @@ public class PaymentService {
         if (request.getIdempotencyKey() != null && !request.getIdempotencyKey().isEmpty()) {
             Optional<Payment> existingPayment = paymentRepository.findByIdempotencyKey(request.getIdempotencyKey());
             if (existingPayment.isPresent()) {
-                return new PaymentResponse(existingPayment.get());
+                throw new DuplicatePaymentException(
+                        request.getIdempotencyKey(),
+                        existingPayment.get().getPaymentReference()
+                );
             }
         }
 
@@ -134,44 +141,49 @@ public class PaymentService {
 
         // Rule 1: Cannot send money to the same account
         if (fromAccount.getId().equals(toAccount.getId())) {
-            throw new IllegalArgumentException("Cannot transfer money to the same account");
+            throw new InvalidPaymentException("Cannot transfer money to the same account");
         }
 
         // Rule 2: User must own the source account
         if (!fromAccount.getOwner().getId().equals(initiator.getId())) {
-            throw new IllegalArgumentException("User does not have permission to debit this account");
+            throw new InvalidPaymentException("User does not have permission to debit this account");
         }
 
         // Rule 3: Source account must be active
         if (!fromAccount.isActive()) {
-            throw new IllegalArgumentException("Source account is not active");
+            throw new InvalidPaymentException("Source account is not active");
         }
 
         // Rule 4: Destination account must be active
         if (!toAccount.isActive()) {
-            throw new IllegalArgumentException("Destination account is not active");
+            throw new InvalidPaymentException("Destination account is not active");
         }
 
         // Rule 5: Check sufficient balance
         if (!fromAccount.hasSufficientBalance(request.getAmount())) {
-            throw new IllegalArgumentException("Insufficient balance in source account");
+            throw new InsufficientFundsException(
+                    fromAccount.getAccountNumber(),
+                    request.getAmount(),
+                    fromAccount.getBalance()
+            );
         }
 
         // Rule 6: Currency validation (simplified - both accounts should support the currency)
         if (!fromAccount.getCurrencyCode().equals(request.getCurrency()) ||
                 !toAccount.getCurrencyCode().equals(request.getCurrency())) {
-            throw new IllegalArgumentException("Currency mismatch between accounts and payment");
+            throw new InvalidPaymentException("Currency mismatch between accounts and payment");
         }
+
 
         // Rule 7: Amount validation
         if (request.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
-            throw new IllegalArgumentException("Payment amount must be positive");
+            throw new InvalidPaymentException("Payment amount must be positive");
         }
 
         // Rule 8: Maximum payment limit (business rule)
         BigDecimal maxPaymentLimit = new BigDecimal("100000.00"); // $100,000 limit
         if (request.getAmount().compareTo(maxPaymentLimit) > 0) {
-            throw new IllegalArgumentException("Payment amount exceeds maximum limit of " + maxPaymentLimit);
+            throw new InvalidPaymentException("Payment amount exceeds maximum limit of " + maxPaymentLimit);
         }
     }
 
@@ -208,7 +220,7 @@ public class PaymentService {
     private Account validateAndGetAccount(String accountNumber) {
         Optional<Account> accountOptional = accountRepository.findByAccountNumber(accountNumber);
         if (accountOptional.isEmpty()) {
-            throw new IllegalArgumentException("Account not found: " + accountNumber);
+            throw new AccountNotFoundException(accountNumber);
         }
         return accountOptional.get();
     }
@@ -251,7 +263,7 @@ public class PaymentService {
     public List<PaymentResponse> getUserPayments(String username) {
         Optional<User> userOptional = userService.findByUsername(username);
         if (userOptional.isEmpty()) {
-            throw new IllegalArgumentException("User not found: " + username);
+            throw new InvalidPaymentException("User not found: " + username);
         }
 
         List<Payment> payments = paymentRepository.findByInitiatedBy(userOptional.get());

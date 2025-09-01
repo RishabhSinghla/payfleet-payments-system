@@ -1,6 +1,8 @@
 com\payfleet\dto\UserResponse.class
+com\payfleet\exception\AccountNotFoundException.class
 com\payfleet\model\UserRole.class
 com\payfleet\config\SecurityConfig.class
+com\payfleet\exception\InsufficientFundsException.class
 com\payfleet\model\Account.class
 com\payfleet\model\User.class
 com\payfleet\dto\AccountResponse.class
@@ -8,11 +10,15 @@ com\payfleet\controller\AccountController.class
 com\payfleet\repository\PaymentRepository.class
 com\payfleet\repository\AccountRepository.class
 com\payfleet\security\JwtUtil.class
+com\payfleet\exception\DuplicatePaymentException.class
 com\payfleet\controller\WelcomeController.class
+com\payfleet\exception\PayFleetException.class
+com\payfleet\dto\ErrorResponse.class
 com\payfleet\dto\AuthResponse.class
 com\payfleet\security\JwtAuthenticationFilter.class
 com\payfleet\controller\AuthController.class
 com\payfleet\service\AccountService.class
+com\payfleet\exception\GlobalExceptionHandler.class
 com\payfleet\PayFleetApplication.class
 com\payfleet\service\PaymentService.class
 com\payfleet\controller\UserController.class
@@ -22,8 +28,10 @@ com\payfleet\dto\AccountCreationRequest.class
 com\payfleet\dto\UserProfileUpdateRequest.class
 com\payfleet\model\AccountType.class
 com\payfleet\model\AccountStatus.class
+com\payfleet\exception\InvalidPaymentException.class
 com\payfleet\dto\PaymentInitiationRequest.class
 com\payfleet\service\UserService.class
+com\payfleet\dto\ValidationError.class
 com\payfleet\model\UserStatus.class
 com\payfleet\dto\PaymentResponse.class
 com\payfleet\model\Payment.class
