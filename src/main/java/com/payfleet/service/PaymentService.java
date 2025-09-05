@@ -1,5 +1,7 @@
 package com.payfleet.service;
 
+import com.payfleet.dto.PaymentEvent;
+import com.payfleet.dto.PaymentEventType;
 import com.payfleet.dto.PaymentInitiationRequest;
 import com.payfleet.dto.PaymentResponse;
 import com.payfleet.exception.AccountNotFoundException;
@@ -194,6 +196,10 @@ public class PaymentService {
      */
     private void processPaymentTransaction(Payment payment) {
         try {
+            payment.setStatus(PaymentStatus.PROCESSING);
+            paymentRepository.save(payment);
+            publishProcessingEvent(payment);
+            
             Account fromAccount = payment.getFromAccount();
             Account toAccount = payment.getToAccount();
             BigDecimal amount = payment.getAmount();
@@ -315,5 +321,22 @@ public class PaymentService {
         Payment savedPayment = paymentRepository.save(payment);
 
         return new PaymentResponse(savedPayment);
+    }
+
+    private void publishProcessingEvent(Payment payment) {
+        PaymentEvent event = new PaymentEvent(
+                PaymentEventType.PAYMENT_PROCESSING,
+                payment.getId(),
+                payment.getPaymentReference(),
+                payment.getFromAccount().getAccountNumber(),
+                payment.getToAccount().getAccountNumber(),
+                payment.getAmount(),
+                payment.getCurrency(),
+                PaymentStatus.PROCESSING,
+                payment.getDescription(),
+                payment.getInitiatedBy().getUsername()
+        );
+
+        paymentEventProducer.publishEvent(event, "Payment processing: " + payment.getPaymentReference());
     }
 }
