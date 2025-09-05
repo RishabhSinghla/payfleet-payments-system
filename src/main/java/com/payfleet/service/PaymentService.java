@@ -45,6 +45,8 @@ public class PaymentService {
     private final AccountRepository accountRepository;
     private final UserService userService;
     private final Random random = new Random();
+    @Autowired
+    private PaymentEventProducer paymentEventProducer;
 
     @Autowired
     public PaymentService(PaymentRepository paymentRepository,
@@ -122,7 +124,7 @@ public class PaymentService {
 
             // Step 9: Save payment record
             Payment savedPayment = paymentRepository.save(payment);
-
+            paymentEventProducer.publishPaymentInitiated(savedPayment);
             return new PaymentResponse(savedPayment);
 
         } catch (Exception e) {
@@ -208,9 +210,14 @@ public class PaymentService {
             payment.markAsCompleted();
             payment.setProcessingDetails("Payment processed successfully at " + LocalDateTime.now());
 
+            paymentEventProducer.publishPaymentCompleted(payment);
+
         } catch (Exception e) {
             // If anything fails, the @Transactional annotation will rollback all changes
+            payment.markAsFailed("Transaction processing failed: " + e.getMessage());
+            paymentEventProducer.publishPaymentFailed(payment);
             throw new RuntimeException("Transaction processing failed: " + e.getMessage(), e);
+
         }
     }
 

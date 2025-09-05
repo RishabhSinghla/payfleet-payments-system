@@ -29,6 +29,40 @@ spring:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true  # Pretty-print SQL queries
 
+  # Kafka Configuration
+  kafka:
+    bootstrap-servers: localhost:9092
+
+    # Producer Configuration
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        spring.json.add.type.headers: false
+      retries: 3
+      acks: all
+
+    # Consumer Configuration
+    consumer:
+      group-id: payfleet-consumer-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "com.payfleet.dto"
+
+    # Topic Configuration
+    template:
+      default-topic: payment-events
+
+# PayFleet Kafka Topics
+payfleet:
+  kafka:
+    topics:
+      payment-events: payment-events
+      payment-notifications: payment-notifications
+      account-updates: account-updates
+
 # Logging Configuration - helps us debug issues
 logging:
   level:
