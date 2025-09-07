@@ -34,6 +34,8 @@ public class PaymentEventProcessor {
     private final PaymentRepository paymentRepository;
     private final NotificationService notificationService;
     private final AuditService auditService;
+    @Autowired
+    private EventStoreService eventStoreService;
 
     @Autowired
     public PaymentEventProcessor(PaymentRepository paymentRepository,
@@ -64,6 +66,9 @@ public class PaymentEventProcessor {
                 event.getEventType(), event.getPaymentReference(), partition, offset);
 
         try {
+            // Store event in event store for audit trail
+            eventStoreService.storePaymentEvent(event, event.getInitiatedByUsername(),
+                    event.getPaymentReference());
             // Process based on event type
             switch (event.getEventType()) {
                 case PaymentEventType.PAYMENT_INITIATED:
