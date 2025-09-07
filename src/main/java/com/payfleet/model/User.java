@@ -109,6 +109,12 @@ public class User {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
+    /**
+     * Phone Number - User's phone number for SMS notifications
+     */
+    @Column(name = "phone_number", length = 20)
+    private String phoneNumber;
+
     // Default Constructor (required by JPA)
     public User() {
     }
@@ -217,5 +223,14 @@ public class User {
      */
     public boolean isAdmin() {
         return role == UserRole.ADMIN;
+    }
+
+    // Add getter and setter
+    public String getPhoneNumber() {
+        return phoneNumber;
+    }
+
+    public void setPhoneNumber(String phoneNumber) {
+        this.phoneNumber = phoneNumber;
     }
 }

@@ -125,9 +125,6 @@ public class PaymentEventProcessor {
         // Update payment status in database
         updatePaymentStatus(event.getPaymentReference(), PaymentStatus.PENDING);
 
-        // Send initiation notification
-        notificationService.sendPaymentInitiatedNotification(event);
-
         // Trigger fraud detection (simulate)
         performFraudDetection(event);
 
@@ -157,9 +154,6 @@ public class PaymentEventProcessor {
         // Update payment status
         updatePaymentStatus(event.getPaymentReference(), PaymentStatus.COMPLETED);
 
-        // Send success notification
-        notificationService.sendPaymentCompletedNotification(event);
-
         // Update customer loyalty points (simulate)
         updateLoyaltyPoints(event);
 
@@ -180,14 +174,8 @@ public class PaymentEventProcessor {
         // Update payment status
         updatePaymentStatus(event.getPaymentReference(), PaymentStatus.FAILED);
 
-        // Send failure notification
-        notificationService.sendPaymentFailedNotification(event);
-
         // Check if retry is possible
         checkRetryEligibility(event);
-
-        // Alert support team for manual review
-        notificationService.alertSupportTeam(event);
 
         // Log failure
         auditService.logPaymentFailed(event);
@@ -220,14 +208,14 @@ public class PaymentEventProcessor {
         logger.info("Processing account credit for account: {} amount: {}",
                 event.getToAccountNumber(), event.getAmount());
 
-        // Update account balance in read model
+        // Update account balance in read model (if using CQRS)
         updateAccountBalanceReadModel(event.getToAccountNumber(), event.getAmount());
 
-        // Send credit notification
-        notificationService.sendAccountCreditedNotification(event);
+        // Check for low balance alerts
+        checkLowBalanceAlert(event.getFromAccountNumber());
 
-        // Update earning analytics
-        updateEarningAnalytics(event);
+        // Update spending analytics
+        updateSpendingAnalytics(event);
 
         // Log credit operation
         auditService.logAccountCredited(event);

@@ -99,7 +99,7 @@ public class PaymentEventProducer {
     /**
      * Generic method to publish events to Kafka
      */
-    private void publishEvent(PaymentEvent event, String logMessage) {
+    public void publishEvent(PaymentEvent event, String logMessage) {
         try {
             logger.info("Publishing event: {}", logMessage);
 
