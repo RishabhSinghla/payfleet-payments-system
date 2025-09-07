@@ -1,7 +1,9 @@
 package com.payfleet.controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.payfleet.dto.PaymentInitiationRequest;
 import com.payfleet.dto.PaymentResponse;
+import com.payfleet.service.IdempotencyService;
 import com.payfleet.service.PaymentService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,10 +33,14 @@ import java.util.Optional;
 public class PaymentController {
 
     private final PaymentService paymentService;
+    private final IdempotencyService idempotencyService;
+    @Autowired
+    private ObjectMapper objectMapper;
 
     @Autowired
-    public PaymentController(PaymentService paymentService) {
+    public PaymentController(PaymentService paymentService, IdempotencyService idempotencyService) {
         this.paymentService = paymentService;
+        this.idempotencyService = idempotencyService;
     }
 
     /**
@@ -46,31 +52,108 @@ public class PaymentController {
      */
     @PostMapping("/initiate")
     public ResponseEntity<?> initiatePayment(@Valid @RequestBody PaymentInitiationRequest request,
+                                             @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
                                              Authentication authentication) {
+
+        String username = authentication.getName();
+
         try {
-            String username = authentication.getName();
+            // Check idempotency if key provided
+            if (idempotencyKey != null && !idempotencyKey.trim().isEmpty()) {
+                IdempotencyService.IdempotencyResult idempotencyResult =
+                        idempotencyService.checkIdempotency(idempotencyKey, "Payment", username, request);
+
+                // Handle different idempotency results
+                switch (idempotencyResult.getAction()) {
+                    case RETURN_DUPLICATE:
+                        return ResponseEntity.status(idempotencyResult.getHttpStatus())
+                                .body(idempotencyResult.getResponseBody());
+
+                    case PROCESSING:
+                        return ResponseEntity.status(HttpStatus.ACCEPTED).body(Map.of(
+                                "success", false,
+                                "message", "Request is still being processed",
+                                "idempotencyKey", idempotencyKey,
+                                "timestamp", LocalDateTime.now()
+                        ));
+
+                    case CONFLICT:
+                        return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of(
+                                "success", false,
+                                "message", idempotencyResult.getMessage(),
+                                "idempotencyKey", idempotencyKey,
+                                "timestamp", LocalDateTime.now()
+                        ));
+
+                    case PROCEED:
+                        // Continue with normal processing
+                        break;
+                }
+            }
+
+            // Process payment normally
             PaymentResponse payment = paymentService.initiatePayment(request, username);
 
-            return ResponseEntity.status(HttpStatus.CREATED).body(Map.of(
+            // Create success response
+            Map<String, Object> response = Map.of(
                     "success", true,
                     "message", "Payment initiated successfully",
                     "data", payment,
                     "timestamp", LocalDateTime.now()
-            ));
+            );
+
+            // Mark idempotency as completed if key was provided
+            if (idempotencyKey != null && !idempotencyKey.trim().isEmpty()) {
+                try {
+                    String responseBody = objectMapper.writeValueAsString(response);
+                    idempotencyService.markCompleted(idempotencyKey, payment.getPaymentReference(),
+                            responseBody, HttpStatus.CREATED.value());
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            }
+
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
 
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of(
+            // Handle business logic errors
+            Map<String, Object> errorResponse = Map.of(
                     "success", false,
                     "message", e.getMessage(),
                     "timestamp", LocalDateTime.now()
-            ));
+            );
+
+            // Mark idempotency as failed if key was provided
+            if (idempotencyKey != null && !idempotencyKey.trim().isEmpty()) {
+                try {
+                    String errorBody = objectMapper.writeValueAsString(errorResponse);
+                    idempotencyService.markFailed(idempotencyKey, errorBody, HttpStatus.BAD_REQUEST.value());
+                } catch (Exception ex) {
+                    throw new RuntimeException(e);
+                }
+            }
+
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
 
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
+            // Handle unexpected errors
+            Map<String, Object> errorResponse = Map.of(
                     "success", false,
                     "message", "Payment initiation failed due to server error",
                     "timestamp", LocalDateTime.now()
-            ));
+            );
+
+            // Mark idempotency as failed if key was provided
+            if (idempotencyKey != null && !idempotencyKey.trim().isEmpty()) {
+                try {
+                    String errorBody = objectMapper.writeValueAsString(errorResponse);
+                    idempotencyService.markFailed(idempotencyKey, errorBody, HttpStatus.INTERNAL_SERVER_ERROR.value());
+                } catch (Exception ex) {
+                    throw new RuntimeException(ex);
+                }
+            }
+
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
         }
     }
 
